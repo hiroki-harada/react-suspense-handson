@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+
+const dataMap: Map<string, string> = new Map();
 
 const sleep = (ms: number) => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -9,30 +10,33 @@ async function fetchData1(): Promise<string> {
     return `Hello, ${(Math.random() * 1000).toFixed(0)}`;
 }
 
-export const DataLoader: React.VFC = () => {
-    const [loading, setLoading] = useState(false);
-    const [data, setData] = useState<string | null>(null);
 
-    const _ = useMemo(() => {
-      if (loading) {
-        console.log("loading is true");
-      }
-      return 1;
-    }, [loading]);
+function useData<T>(cacheKey: string, fetch: () => Promise<T>): T {
+  const cachedData = dataMap.get(cacheKey) as T | undefined;
+  if (cachedData === undefined) {
+    throw fetch().then((d) => dataMap.set(cacheKey, d));
+  }
+  return cachedData;
+}
 
-    // ローディングフラグが立っていてdataがまだ無ければローディングを開始する
-    if (loading && data === null) {
-      sleep(500).then(() => setData("boom!"));
-      throw fetchData1().then(setData);
-    }
-
-    // データがあればそれを表示
-    return (
-        <div>
-          <div>Data is {data}</div>
-          <button className="border p-1" onClick={() => setLoading(true)}>
-            load
-          </button>
-        </div>
-      );
+const DataLoader1: React.VFC = () => {
+  const data = useData("DataLoader1", fetchData1);
+  return (
+    <div>
+      <div>Data is {data}</div>
+    </div>
+  );
 };
+
+const DataLoader2: React.VFC = () => {
+  const data = useData("DataLoader2", fetchData1);
+  return (
+    <div>
+      <div>Data is {data}</div>
+    </div>
+  );
+};
+
+
+
+export {DataLoader1, DataLoader2}
